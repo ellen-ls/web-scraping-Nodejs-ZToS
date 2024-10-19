@@ -1,0 +1,54 @@
+body { 
+font-family: Arial, sans-serif; 
+background: linear-gradient(90deg, rgba(64,56,194,1) 0%, rgba(59,59,167,1) 35%, rgba(0,212,255,1) 100%);
+}
+
+.container{ 
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+max-width: 600px;
+margin: auto; 
+padding: 20px;
+ }
+
+.img{
+    width: 10rem;
+}
+h2{
+    color: #ffffff;
+}
+input{ 
+border-radius: 5px;
+width: 100%;
+padding: 10px; 
+margin: 10px 0;
+}
+
+button{
+    border: 1px solid white;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 10px;
+    width: 100px;
+    padding: 10px;
+    cursor: pointer;
+}
+#download{ 
+display: none;
+
+}
+.div-download{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.buttonDownload{
+    width: 150px;
+}
+
+

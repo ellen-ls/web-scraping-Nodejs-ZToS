@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: bot-node-ztos
+    runtime: node 
+    buildCommand: cd backend && yarn install
+    startCommand: cd backend && yarn start
+    
+
+    
+
+ 
