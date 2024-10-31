@@ -16,35 +16,43 @@ const headers = {
 
 let dados_vagas = [];
 
-app.use(cors()); // Adicionando middleware CORS
+app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../frontend'))); // Para servir o frontend estático
+app.use(express.static(path.join(__dirname, '../frontend')));
 
 app.post('/buscar-vagas', async (req, res) => {
-    const { keywords } = req.body; // Esperando um array de palavras-chave
+    const { keywords } = req.body;
     dados_vagas = [];
     
     for (const keyword of keywords) {
         const palavra_formatada = keyword.replace(" ", "+");
         const palavra_codificada = encodeURIComponent(palavra_formatada);
 
-        for (let page = 1; page < 10; page++) {
+        for (let page = 1; page <= 10; page++) {
             const url = base_url.replace('{}', palavra_codificada).replace('{}', page);
             try {
                 const response = await axios.get(url, { headers });
                 const $ = cheerio.load(response.data);
-                const vagas = $('div.sc-b2039713-27');
+ 
+                const vagas = $('div.sc-90013fa1-26'); // A class tem que ser a div principal de cada vaga(individual)
 
                 if (vagas.length === 0) {
                     break;
                 }
 
                 vagas.each((_, vaga) => {
-                    const titulo = $(vaga).find('h2.sc-b2039713-22').text().trim() || 'Título não encontrado';
-                    const local = $(vaga).find('div.sc-b2039713-16').text().trim() || 'Local não encontrado';
-                    const empresa = $(vaga).find('p.sc-b2039713-8').text().trim() || 'Empresa não encontrada';
-                    const data = $(vaga).find('p.sc-b2039713-10').text().trim() || 'Data não encontrada';
+
+                    // Obtendo o título diretamente do atributo title dentro da tag <a>
+                    const titulo = $(vaga).find('a').attr('title') || 'Título não encontrado';
+                    const local = $(vaga).find('span.sc-90013fa1-17').text().trim() || 'Local não encontrado';
+                    const empresa = $(vaga).find('p.sc-90013fa1-7').text().trim() || 'Empresa não encontrada';
+                    const data = $(vaga).find('p.sc-90013fa1-9').text().trim() || 'Data não encontrada';
                     const link = $(vaga).find('a').attr('href') || 'Link não encontrado';
+
+                    console.log("Título:", titulo);
+                    console.log("Empresa:", empresa);
+                    console.log("Data:", data);
+                    console.log("Link:", `https://www.yourfirm.de${link}`);
 
                     if (titulo.toLowerCase().includes(keyword.toLowerCase())) {
                         dados_vagas.push({
@@ -58,7 +66,8 @@ app.post('/buscar-vagas', async (req, res) => {
                     }
                 });
             } catch (error) {
-                return res.status(500).json({ error: 'Erro ao buscar vagas' });
+                console.error(`Erro ao buscar vagas para a palavra-chave "${keyword}" na página ${page}:`, error);
+                continue; // Continua para a próxima iteração em caso de erro
             }
         }
     }
@@ -79,7 +88,7 @@ app.get('/baixar-vagas', (req, res) => {
         if (err) {
             console.error('Erro ao baixar arquivo:', err);
         }
-        fs.unlinkSync(filePath); // Deleta o arquivo após o download
+        fs.unlinkSync(filePath);
     });
 });
 
