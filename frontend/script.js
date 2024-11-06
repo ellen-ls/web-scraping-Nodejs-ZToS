@@ -1,5 +1,4 @@
 const API_URL = 'https://web-scraping-nodejs-ztos.onrender.com';
-// const API_URL = 'http://localhost:3000'
 
 async function buscarVagas() {
     const keywords = document.getElementById('keyword').value.split(',').map(word => word.trim());
