@@ -22,7 +22,7 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 
 app.post('/buscar-vagas', async (req, res) => {
     const { keywords } = req.body;
-    dados_vagas = [];
+    dados_vagas = []; // Limpa os dados para evitar duplicações em chamadas subsequentes
     
     for (const keyword of keywords) {
         const palavra_formatada = keyword.replace(" ", "+");
@@ -33,26 +33,62 @@ app.post('/buscar-vagas', async (req, res) => {
             try {
                 const response = await axios.get(url, { headers });
                 const $ = cheerio.load(response.data);
- 
-                const vagas = $('div.sc-90013fa1-26'); // A class tem que ser a div principal de cada vaga(individual)
+
+                const vagas = $('div.sc-90013fa1-26'); // A classe principal da vaga individual
 
                 if (vagas.length === 0) {
                     break;
                 }
 
-                vagas.each((_, vaga) => {
-
-                    // Obtendo o título diretamente do atributo title dentro da tag <a>
+                for (let vaga of vagas) {
                     const titulo = $(vaga).find('a').attr('title') || 'Título não encontrado';
                     const local = $(vaga).find('span.sc-90013fa1-17').text().trim() || 'Local não encontrado';
                     const empresa = $(vaga).find('p.sc-90013fa1-7').text().trim() || 'Empresa não encontrada';
                     const data = $(vaga).find('p.sc-90013fa1-9').text().trim() || 'Data não encontrada';
-                    const link = $(vaga).find('a').attr('href') || 'Link não encontrado';
+                    const link = `https://www.yourfirm.de${$(vaga).find('a').attr('href')}`;
+
+                    let email = '-----';
+                    let telefone = '-----';
+
+                    try {
+                        // Fazendo a requisição para a página de detalhes
+                        const detalheResponse = await axios.get(link, { headers });
+                        const detalhe$ = cheerio.load(detalheResponse.data);
+
+                        // Extrair texto da div principal e da div alternativa
+                        const contatoElemento = detalhe$('div.sc-27046dc7-0');
+                        const contatoTexto = contatoElemento.length ? contatoElemento.html() : '';
+                        const contatoElementoAlt = detalhe$('sc-dbf8651d-0');
+                        const contatoTextoAlt = contatoElementoAlt.length ? contatoElementoAlt.html() : '';
+
+                        // Substituir <br> por quebras de linha
+                        const contatoTextoFormatado = contatoTexto.replace(/<br\s*\/?>/gi, '\n');
+                        const contatoTextoAltFormatado = contatoTextoAlt.replace(/<br\s*\/?>/gi, '\n');
+
+                        // Regex para email (na div principal ou alternativa)
+                        const emailMatch = contatoTextoFormatado.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/) ||
+                                           contatoTextoAltFormatado.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+                        if (emailMatch) {
+                            email = emailMatch[0];
+                        }
+
+                        // Regex para telefone (na div principal ou alternativa)
+                        const telefoneMatch = contatoTextoFormatado.match(/(?:\+49|\+43|\bTel\b|\bTelefon\b)\s*:?(\s*\(?\d{2,}\)?[\s.-]?\d{2,}[\s.-]?\d{2,})/) ||
+                                              contatoTextoAltFormatado.match(/(?:\+49|\+43|\bTel\b|\bTelefon\b)\s*:?(\s*\(?\d{2,}\)?[\s.-]?\d{2,}[\s.-]?\d{2,})/);
+                        if (telefoneMatch) {
+                            telefone = telefoneMatch[0];
+                        }
+
+                    } catch (erroDetalhe) {
+                        console.error(`Erro ao buscar detalhes da vaga no link ${link}:`, erroDetalhe);
+                    }
 
                     console.log("Título:", titulo);
                     console.log("Empresa:", empresa);
                     console.log("Data:", data);
-                    console.log("Link:", `https://www.yourfirm.de${link}`);
+                    console.log("Link:", link);
+                    console.log("Email:", email);
+                    console.log("Telefone:", telefone);
 
                     if (titulo.toLowerCase().includes(keyword.toLowerCase())) {
                         dados_vagas.push({
@@ -61,13 +97,15 @@ app.post('/buscar-vagas', async (req, res) => {
                             'Location': local,
                             'Company': empresa,
                             'Date': data,
-                            'Link': `https://www.yourfirm.de${link}`
+                            'Link': link,
+                            'Email': email,
+                            'Phone': telefone
                         });
                     }
-                });
+                }
             } catch (error) {
                 console.error(`Erro ao buscar vagas para a palavra-chave "${keyword}" na página ${page}:`, error);
-                continue; // Continua para a próxima iteração em caso de erro
+                continue;
             }
         }
     }
@@ -88,7 +126,7 @@ app.get('/baixar-vagas', (req, res) => {
         if (err) {
             console.error('Erro ao baixar arquivo:', err);
         }
-        fs.unlinkSync(filePath);
+        fs.unlinkSync(filePath); // Remove o arquivo após o download
     });
 });
 
