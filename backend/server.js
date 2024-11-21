@@ -49,7 +49,7 @@ app.post('/buscar-vagas', async (req, res) => {
                     let email = '-----';
                     let telefone = '-----';
 
-                    try {
+                    /*try {
                         // Fazendo a requisição para a página de detalhes
                         const detalheResponse = await axios.get(link, { headers });
                         const detalhe$ = cheerio.load(detalheResponse.data);
@@ -80,7 +80,7 @@ app.post('/buscar-vagas', async (req, res) => {
 
                     } catch (erroDetalhe) {
                         console.error(`Erro ao buscar detalhes da vaga no link ${link}:`, erroDetalhe);
-                    }
+                    } */
 
                     console.log("Título:", titulo);
                     console.log("Local:", local)
