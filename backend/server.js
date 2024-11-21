@@ -34,7 +34,7 @@ app.post('/buscar-vagas', async (req, res) => {
                 const response = await axios.get(url, { headers });
                 const $ = cheerio.load(response.data);
 
-                const vagas = $('div.sc-90013fa1-26'); // A classe principal da vaga individual
+                const vagas = $('[data-testid=qa-hitzone]').parent(); // A classe principal da vaga individual
 
                 if (vagas.length === 0) {
                     break;
@@ -42,9 +42,8 @@ app.post('/buscar-vagas', async (req, res) => {
 
                 for (let vaga of vagas) {
                     const titulo = $(vaga).find('a').attr('title') || 'Título não encontrado';
-                    const local = $(vaga).find('span.sc-90013fa1-17').text().trim() || 'Local não encontrado';
-                    const empresa = $(vaga).find('p.sc-90013fa1-7').text().trim() || 'Empresa não encontrada';
-                    const data = $(vaga).find('p.sc-90013fa1-9').text().trim() || 'Data não encontrada';
+                    const local = $(vaga).find('[data-icon="location-dot"]').parent().find('span').text().trim() || 'Local não encontrado';
+                    const empresa = $(vaga).find('p:first').text().trim() || 'Empresa não encontrada';
                     const link = `https://www.yourfirm.de${$(vaga).find('a').attr('href')}`;
 
                     let email = '-----';
@@ -56,9 +55,9 @@ app.post('/buscar-vagas', async (req, res) => {
                         const detalhe$ = cheerio.load(detalheResponse.data);
 
                         // Extrair texto da div principal e da div alternativa
-                        const contatoElemento = detalhe$('div.sc-27046dc7-0');
+                        const contatoElemento = detalhe$('#job-ad-details-widget');
                         const contatoTexto = contatoElemento.length ? contatoElemento.html() : '';
-                        const contatoElementoAlt = detalhe$('sc-dbf8651d-0');
+                        const contatoElementoAlt = detalhe$('body');
                         const contatoTextoAlt = contatoElementoAlt.length ? contatoElementoAlt.html() : '';
 
                         // Substituir <br> por quebras de linha
@@ -68,24 +67,24 @@ app.post('/buscar-vagas', async (req, res) => {
                         // Regex para email (na div principal ou alternativa)
                         const emailMatch = contatoTextoFormatado.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/) ||
                                            contatoTextoAltFormatado.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-                        if (emailMatch) {
-                            email = emailMatch[0];
-                        }
+                        //if (emailMatch) {
+                        //    email = emailMatch[0];
+                        //}
 
                         // Regex para telefone (na div principal ou alternativa)
                         const telefoneMatch = contatoTextoFormatado.match(/(?:\+49|\+43|\bTel\b|\bTelefon\b)\s*:?(\s*\(?\d{2,}\)?[\s.-]?\d{2,}[\s.-]?\d{2,})/) ||
                                               contatoTextoAltFormatado.match(/(?:\+49|\+43|\bTel\b|\bTelefon\b)\s*:?(\s*\(?\d{2,}\)?[\s.-]?\d{2,}[\s.-]?\d{2,})/);
-                        if (telefoneMatch) {
-                            telefone = telefoneMatch[0];
-                        }
+                        //if (telefoneMatch) {
+                        //    telefone = telefoneMatch[0];
+                        //}
 
                     } catch (erroDetalhe) {
                         console.error(`Erro ao buscar detalhes da vaga no link ${link}:`, erroDetalhe);
                     }
 
                     console.log("Título:", titulo);
+                    console.log("Local:", local)
                     console.log("Empresa:", empresa);
-                    console.log("Data:", data);
                     console.log("Link:", link);
                     console.log("Email:", email);
                     console.log("Telefone:", telefone);
@@ -96,7 +95,6 @@ app.post('/buscar-vagas', async (req, res) => {
                             'Title': titulo,
                             'Location': local,
                             'Company': empresa,
-                            'Date': data,
                             'Link': link,
                             'Email': email,
                             'Phone': telefone
